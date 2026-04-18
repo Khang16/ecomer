@@ -1,6 +1,20 @@
-import { Body, Controller, Get, Param, Post, Query } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Post,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import { CommandBus, QueryBus } from '@nestjs/cqrs';
-import { ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiQuery,
+  ApiTags,
+} from '@nestjs/swagger';
+import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { CreateUserAddressCommand } from '../commands/implements/create-user-address.command';
 import { CreateUserAddressDto } from '../dtos/create-user-address.dto';
 import { SeedLocationCommand } from '../commands/implements/seed-location.command';
@@ -10,6 +24,7 @@ import {
   GetWardsQuery,
 } from '../queries/implements/get-location.query';
 import { GetListUserAddressQuery } from '../queries/implements/get-list-user-address.query';
+import { PaginationDto } from 'src/common/dto/pagination.dto';
 
 @ApiTags('User Address')
 @Controller('user-address')
@@ -23,11 +38,24 @@ export class UserAddressController {
   @ApiOperation({ summary: 'Get all user addresses with filters' })
   @ApiQuery({ name: 'id', required: false, type: Number })
   @ApiQuery({ name: 'name', required: false, type: String })
-  async getAllUserAddress(@Query('id') id?: number, @Query('name') name?: string) {
-    return this.queryBus.execute(new GetListUserAddressQuery(id, name));
+  async getAllUserAddress(
+    @Query() paginationDto: PaginationDto,
+    @Query('id') id?: number,
+    @Query('name') name?: string,
+  ) {
+    return this.queryBus.execute(
+      new GetListUserAddressQuery(
+        id,
+        name,
+        paginationDto.page,
+        paginationDto.limit,
+      ),
+    );
   }
 
   @Post()
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Create address of user' })
   async createUserAddress(@Body() createUserDto: CreateUserAddressDto) {
     return this.commandBus.execute(
@@ -36,6 +64,8 @@ export class UserAddressController {
   }
 
   @Post('seed')
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Seed Vietnam location data' })
   async seedLocation() {
     return this.commandBus.execute(new SeedLocationCommand());
