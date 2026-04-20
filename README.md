@@ -96,3 +96,8 @@ Nest is an MIT-licensed open source project. It can grow thanks to the sponsors 
 ## License
 
 Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+
+1. Lệnh tạo ra file migration mới (tự động gen code DDL dựa trên thay đổi entity):
+   //npx typeorm-ts-node-commonjs migration:generate src/common/migrations/CreateUserAndMedia -d src/data-source.ts
+2. Lệnh thực thi migration (áp dụng các thay đổi xuống database MySQL của bạn):
+   //npx typeorm-ts-node-commonjs migration:run -d src/data-source.ts

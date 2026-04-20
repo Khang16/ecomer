@@ -6,6 +6,10 @@ import { GlobalInterceptor } from './common/interceptors/global.interceptor';
 import { UserModule } from './user/user.module';
 import { UserAddressModule } from './user-address/user-address.module';
 import { AuthModule } from './auth/auth.module';
+import { ProductModule } from './product/product.module';
+import { BrandModule } from './brand/brand.module';
+import { CategoryModule } from './category/category.module';
+import { ClassifyModule } from './classify/classify.module';
 
 @Module({
   imports: [
@@ -27,6 +31,10 @@ import { AuthModule } from './auth/auth.module';
     UserModule,
     UserAddressModule,
     AuthModule,
+    ProductModule,
+    BrandModule,
+    CategoryModule,
+    ClassifyModule,
   ],
   controllers: [],
   providers: [

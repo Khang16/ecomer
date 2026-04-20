@@ -20,6 +20,9 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
+import { RolesGuard } from 'src/auth/guards/roles.guard';
+import { Roles } from 'src/auth/decorators/roles.decorator';
+import { UserLevel } from 'src/common/enums/user/user.enum';
 import { diskStorage } from 'multer';
 import { extname } from 'path';
 import { StoreUserCommand } from '../commands/implements/store-user.command';
@@ -32,7 +35,7 @@ import { GetUsersQuery } from '../queries/implements/find-user.query';
 
 @ApiTags('Users')
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('user')
 export class UserController {
   constructor(
@@ -40,6 +43,7 @@ export class UserController {
     private readonly queryBus: QueryBus,
   ) {}
 
+  @Roles(UserLevel.ADMIN)
   @Post()
   @ApiOperation({ summary: 'Create user with avatr' })
   @ApiConsumes('multipart/form-data')
@@ -62,12 +66,14 @@ export class UserController {
     return this.commandBus.execute(new StoreUserCommand(createUserDto, file));
   }
 
+  @Roles(UserLevel.ADMIN)
   @Get()
   @ApiOperation({ summary: 'Find all user' })
   findAll(@Query() filter: FilterUserDto) {
     return this.queryBus.execute(new GetUsersQuery(filter));
   }
 
+  @Roles(UserLevel.ADMIN)
   @Patch(':id')
   @ApiOperation({ summary: 'Update user' })
   @ApiConsumes('multipart/form-data')
@@ -93,6 +99,7 @@ export class UserController {
     );
   }
 
+  @Roles(UserLevel.ADMIN)
   @Delete(':id')
   @ApiOperation({ summary: 'Delete user' })
   async deleteUser(@Param('id') id: string) {

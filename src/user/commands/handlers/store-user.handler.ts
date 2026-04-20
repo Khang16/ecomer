@@ -47,7 +47,7 @@ export class StoreUserHandler implements ICommandHandler<StoreUserCommand> {
         ? new Date(createUserDto.birthday)
         : undefined,
       is_confirmed: createUserDto.is_confirmed,
-      level: createUserDto.level,
+      level: createUserDto.level || 2,
       avatar_id: avatarMedia ? avatarMedia.id : undefined,
     });
 
