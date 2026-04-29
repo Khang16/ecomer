@@ -1,14 +1,28 @@
-import { IsString, IsInt, IsOptional, MaxLength, Min, IsArray } from 'class-validator';
+import {
+  IsString,
+  IsInt,
+  IsOptional,
+  MaxLength,
+  Min,
+  IsArray,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class CreateProductDto {
-  @ApiProperty({ example: 'Sản phẩm mẫu 1', description: 'Tên sản phẩm', maxLength: 120 })
+  @ApiProperty({
+    example: 'Sản phẩm mẫu 1',
+    description: 'Tên sản phẩm',
+    maxLength: 120,
+  })
   @IsString()
   @MaxLength(120)
   name: string;
 
-  @ApiPropertyOptional({ example: 'Mô tả chi tiết sản phẩm', description: 'Mô tả sản phẩm' })
+  @ApiPropertyOptional({
+    example: 'Mô tả chi tiết sản phẩm',
+    description: 'Mô tả sản phẩm',
+  })
   @IsString()
   @IsOptional()
   description?: string;
@@ -25,7 +39,10 @@ export class CreateProductDto {
   @Min(0)
   price: number;
 
-  @ApiPropertyOptional({ example: 1, description: 'ID của hình thu nhỏ (Media ID)' })
+  @ApiPropertyOptional({
+    example: 1,
+    description: 'ID của hình thu nhỏ (Media ID)',
+  })
   @Type(() => Number)
   @IsInt()
   @IsOptional()
@@ -55,6 +72,23 @@ export class CreateProductDto {
   @IsOptional()
   origin_id?: number;
 
+  @ApiPropertyOptional({
+    type: 'array',
+    items: { type: 'number' },
+    description: 'IDs of uploaded images',
+  })
+  @IsArray()
+  @IsOptional()
+  image_ids?: number[];
+
+  @ApiPropertyOptional({
+    type: 'array',
+    items: { type: 'number' },
+    description: 'IDs of uploaded videos',
+  })
+  @IsArray()
+  @IsOptional()
+  video_ids?: number[];
 
   @ApiPropertyOptional({
     type: 'array',

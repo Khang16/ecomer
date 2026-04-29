@@ -1,36 +1,37 @@
 import {
-  Controller,
-  Post,
   Body,
-  UseInterceptors,
-  UploadedFiles,
+  Controller,
+  Delete,
   Get,
   Param,
   Patch,
-  Delete,
+  Post,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
-import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
-import { RolesGuard } from 'src/auth/guards/roles.guard';
-import { Roles } from 'src/auth/decorators/roles.decorator';
-import { UserLevel } from 'src/common/enums/user/user.enum';
+import { CommandBus, QueryBus } from '@nestjs/cqrs';
 import { FileFieldsInterceptor } from '@nestjs/platform-express';
-import { CreateProductDto } from './dto/create-product.dto';
 import {
-  ApiTags,
+  ApiBearerAuth,
+  ApiConsumes,
   ApiOperation,
   ApiResponse,
-  ApiConsumes,
-  ApiBearerAuth,
+  ApiTags,
 } from '@nestjs/swagger';
-import { diskStorage } from 'multer';
-import { extname } from 'path';
-import { CommandBus, QueryBus } from '@nestjs/cqrs';
+import { Roles } from 'src/auth/decorators/roles.decorator';
+import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
+import { RolesGuard } from 'src/auth/guards/roles.guard';
+import { UploadType } from 'src/common/decorators/upload-type.decorator';
+import { TypeMedia } from 'src/common/enums/media/type-media.enum';
+import { UserLevel } from 'src/common/enums/user/user.enum';
+import { MediaInterceptor } from 'src/common/interceptors/file.interceptor';
+import { multerConfig } from 'src/common/utils/multer-config.util';
 import {
   CreateProductCommand,
   DeleteProductCommand,
   UpdateProductCommand,
 } from './commands/implements/product.command';
+import { CreateProductDto } from './dto/create-product.dto';
 import {
   GetProductQuery,
   GetProductsQuery,
@@ -48,6 +49,7 @@ export class ProductController {
 
   @Post()
   @Roles(UserLevel.ADMIN)
+  @UploadType(TypeMedia.PRODUCT_IMAGE_DETAIL)
   @ApiOperation({ summary: 'Thêm mới sản phẩm, upload nhiều ảnh và video' })
   @ApiConsumes('multipart/form-data')
   @ApiResponse({ status: 201, description: 'Sản phẩm đã được tạo.' })
@@ -57,34 +59,13 @@ export class ProductController {
         { name: 'images', maxCount: 10 },
         { name: 'videos', maxCount: 5 },
       ],
-      {
-        storage: diskStorage({
-          destination: (req, file, cb) => {
-            const folder =
-              file.fieldname === 'videos'
-                ? './uploads/videos'
-                : './uploads/products';
-            cb(null, folder);
-          },
-          filename: (req, file, cb) => {
-            const uniqueSuffix =
-              Date.now() + '-' + Math.round(Math.random() * 1e9);
-            cb(
-              null,
-              `${file.fieldname}-${uniqueSuffix}${extname(file.originalname)}`,
-            );
-          },
-        }),
-      },
+      multerConfig('products', 'product'),
     ),
+    MediaInterceptor,
   )
-  async create(
-    @Body() createProductDto: CreateProductDto,
-    @UploadedFiles()
-    files: { images?: Express.Multer.File[]; videos?: Express.Multer.File[] },
-  ) {
+  async create(@Body() createProductDto: CreateProductDto) {
     return await this.commandBus.execute(
-      new CreateProductCommand(createProductDto, files),
+      new CreateProductCommand(createProductDto),
     );
   }
 
@@ -102,6 +83,7 @@ export class ProductController {
 
   @Patch(':id')
   @Roles(UserLevel.ADMIN)
+  @UploadType(TypeMedia.PRODUCT_IMAGE_DETAIL)
   @ApiOperation({ summary: 'Cập nhật sản phẩm' })
   @ApiConsumes('multipart/form-data')
   @UseInterceptors(
@@ -110,35 +92,16 @@ export class ProductController {
         { name: 'images', maxCount: 10 },
         { name: 'videos', maxCount: 5 },
       ],
-      {
-        storage: diskStorage({
-          destination: (req, file, cb) => {
-            const folder =
-              file.fieldname === 'videos'
-                ? './uploads/videos'
-                : './uploads/products';
-            cb(null, folder);
-          },
-          filename: (req, file, cb) => {
-            const uniqueSuffix =
-              Date.now() + '-' + Math.round(Math.random() * 1e9);
-            cb(
-              null,
-              `${file.fieldname}-${uniqueSuffix}${extname(file.originalname)}`,
-            );
-          },
-        }),
-      },
+      multerConfig('products', 'product'),
     ),
+    MediaInterceptor,
   )
   async update(
     @Param('id') id: string,
     @Body() updateProductDto: Partial<CreateProductDto>,
-    @UploadedFiles()
-    files: { images?: Express.Multer.File[]; videos?: Express.Multer.File[] },
   ) {
     return await this.commandBus.execute(
-      new UpdateProductCommand(+id, updateProductDto, files),
+      new UpdateProductCommand(+id, updateProductDto),
     );
   }
 

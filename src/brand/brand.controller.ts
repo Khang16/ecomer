@@ -1,32 +1,38 @@
 import {
-  Controller,
-  Post,
   Body,
+  Controller,
+  Delete,
   Get,
   Param,
-  UseInterceptors,
-  UploadedFile,
   Patch,
-  Delete,
+  Post,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
+import { CommandBus, QueryBus } from '@nestjs/cqrs';
+import { FileInterceptor } from '@nestjs/platform-express';
+import {
+  ApiBearerAuth,
+  ApiConsumes,
+  ApiOperation,
+  ApiTags,
+} from '@nestjs/swagger';
+import { Roles } from 'src/auth/decorators/roles.decorator';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { RolesGuard } from 'src/auth/guards/roles.guard';
-import { Roles } from 'src/auth/decorators/roles.decorator';
+import { UploadType } from 'src/common/decorators/upload-type.decorator';
+import { TypeMedia } from 'src/common/enums/media/type-media.enum';
 import { UserLevel } from 'src/common/enums/user/user.enum';
-import { CreateBrandDto } from './dto/create-brand.dto';
-import { ApiTags, ApiOperation, ApiConsumes, ApiBearerAuth } from '@nestjs/swagger';
-import { FileInterceptor } from '@nestjs/platform-express';
-import { diskStorage } from 'multer';
-import { extname } from 'path';
-import { CommandBus, QueryBus } from '@nestjs/cqrs';
+import { MediaInterceptor } from 'src/common/interceptors/file.interceptor';
+import { multerConfig } from 'src/common/utils/multer-config.util';
 import { CreateBrandCommand } from './commands/implements/create-brand.command';
+import { DeleteBrandCommand } from './commands/implements/delete-brand.command';
+import { UpdateBrandCommand } from './commands/implements/update-brand.command';
+import { CreateBrandDto } from './dto/create-brand.dto';
 import {
   GetBrandQuery,
   GetBrandsQuery,
 } from './queries/implements/get-brands.query';
-import { UpdateBrandCommand } from './commands/implements/update-brand.command';
-import { DeleteBrandCommand } from './commands/implements/delete-brand.command';
 
 @ApiTags('brands')
 @ApiBearerAuth()
@@ -40,26 +46,16 @@ export class BrandController {
 
   @Post()
   @Roles(UserLevel.ADMIN)
+  @UploadType(TypeMedia.BRAND_THUMBNAIL)
   @ApiOperation({ summary: 'Thêm mới brand với ảnh đại diện' })
   @ApiConsumes('multipart/form-data')
   @UseInterceptors(
-    FileInterceptor('image', {
-      storage: diskStorage({
-        destination: './uploads/brands',
-        filename: (req, file, cb) => {
-          const uniqueSuffix =
-            Date.now() + '-' + Math.round(Math.random() * 1e9);
-          cb(null, `brand-${uniqueSuffix}${extname(file.originalname)}`);
-        },
-      }),
-    }),
+    FileInterceptor('image', multerConfig('brands', 'brand')),
+    MediaInterceptor,
   )
-  async create(
-    @Body() createBrandDto: CreateBrandDto,
-    @UploadedFile() image?: Express.Multer.File,
-  ) {
+  async create(@Body() createBrandDto: CreateBrandDto) {
     return await this.commandBus.execute(
-      new CreateBrandCommand(createBrandDto, image),
+      new CreateBrandCommand(createBrandDto),
     );
   }
 
@@ -77,27 +73,19 @@ export class BrandController {
 
   @Patch(':id')
   @Roles(UserLevel.ADMIN)
+  @UploadType(TypeMedia.BRAND_THUMBNAIL)
   @ApiOperation({ summary: 'Cập nhật brand' })
   @ApiConsumes('multipart/form-data')
   @UseInterceptors(
-    FileInterceptor('image', {
-      storage: diskStorage({
-        destination: './uploads/brands',
-        filename: (req, file, cb) => {
-          const uniqueSuffix =
-            Date.now() + '-' + Math.round(Math.random() * 1e9);
-          cb(null, `brand-${uniqueSuffix}${extname(file.originalname)}`);
-        },
-      }),
-    }),
+    FileInterceptor('image', multerConfig('brands', 'brand')),
+    MediaInterceptor,
   )
   async update(
     @Param('id') id: string,
     @Body() updateBrandDto: Partial<CreateBrandDto>,
-    @UploadedFile() image?: Express.Multer.File,
   ) {
     return await this.commandBus.execute(
-      new UpdateBrandCommand(+id, updateBrandDto, image),
+      new UpdateBrandCommand(+id, updateBrandDto),
     );
   }
 

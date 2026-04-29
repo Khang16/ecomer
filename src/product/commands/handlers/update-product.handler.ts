@@ -3,7 +3,6 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Product } from 'src/common/entities/product.entity';
 import { Media } from 'src/common/entities/media.entity';
-import { TypeMedia } from 'src/common/enums/media/type-media.enum';
 import { UpdateProductCommand } from '../implements/product.command';
 import { NotFoundException } from '@nestjs/common';
 
@@ -19,37 +18,34 @@ export class UpdateProductHandler
   ) {}
 
   async execute(command: UpdateProductCommand): Promise<Product> {
-    const { id, updateProductDto, files } = command;
+    const { id, updateProductDto } = command;
 
     const product = await this.productRepository.findOne({ where: { id } });
     if (!product) {
       throw new NotFoundException(`Product with ID ${id} not found`);
     }
 
-    Object.assign(product, updateProductDto);
+    const { image_ids, video_ids, images, videos, ...productData } = updateProductDto as any;
 
-    if (files.images && files.images.length > 0) {
-      for (const file of files.images) {
-        const media = this.mediaRepository.create({
-          url: `/uploads/products/${file.filename}`,
-          type: TypeMedia.PRODUCT_IMAGE_DETAIL,
-          product: product,
-        });
-        await this.mediaRepository.save(media);
+    Object.assign(product, productData);
+    const savedProduct = await this.productRepository.save(product);
+
+    // Link images to product
+    if (image_ids && image_ids.length > 0) {
+      await this.mediaRepository.update(image_ids, { product: savedProduct });
+      
+      // Set the first image as thumbnail if not set
+      if (!savedProduct.thumbnail_id) {
+          savedProduct.thumbnail_id = image_ids[0];
+          await this.productRepository.save(savedProduct);
       }
     }
 
-    if (files.videos && files.videos.length > 0) {
-      for (const file of files.videos) {
-        const media = this.mediaRepository.create({
-          url: `/uploads/videos/${file.filename}`,
-          type: TypeMedia.PRODUCT_VIDEO,
-          product: product,
-        });
-        await this.mediaRepository.save(media);
-      }
+    // Link videos to product
+    if (video_ids && video_ids.length > 0) {
+      await this.mediaRepository.update(video_ids, { product: savedProduct });
     }
 
-    return await this.productRepository.save(product);
+    return savedProduct;
   }
 }

@@ -16,27 +16,9 @@ export class CreateBrandHandler implements ICommandHandler<CreateBrandCommand> {
   ) {}
 
   async execute(command: CreateBrandCommand): Promise<Brand> {
-    const { createBrandDto, file } = command;
+    const { createBrandDto } = command;
 
-    let imageMedia: Media | undefined = undefined;
-    if (file) {
-      imageMedia = this.mediaRepository.create({
-        url: `/uploads/brands/${file.filename}`,
-        type: TypeMedia.BRAND_THUMBNAIL,
-      });
-      imageMedia = await this.mediaRepository.save(imageMedia);
-    } else {
-      imageMedia = this.mediaRepository.create({
-        url: `/uploads/brands/brand-default.png`,
-        type: TypeMedia.BRAND_THUMBNAIL,
-      });
-      imageMedia = await this.mediaRepository.save(imageMedia);
-    }
-
-    const brand = this.brandRepository.create({
-      ...createBrandDto,
-      image_id: imageMedia ? imageMedia.id : undefined,
-    });
+    const brand = this.brandRepository.create(createBrandDto);
 
     return await this.brandRepository.save(brand);
   }

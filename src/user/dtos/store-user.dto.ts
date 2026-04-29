@@ -18,17 +18,17 @@ export class CreateUserDto {
   @ApiProperty()
   @IsNotEmpty()
   @IsString()
-  name: string;
+  name!: string;
 
   @ApiProperty()
   @IsNotEmpty()
   @IsEmail()
-  email: string;
+  email!: string;
 
   @ApiProperty()
   @IsNotEmpty()
   @IsString()
-  password: string;
+  password!: string;
 
   @ApiPropertyOptional()
   @IsOptional()
@@ -56,7 +56,7 @@ export class CreateUserDto {
   @IsNotEmpty()
   @Type(() => Number)
   @IsEnum(UserLevel)
-  level: UserLevel;
+  level!: UserLevel;
 
   @ApiPropertyOptional({
     type: 'string',

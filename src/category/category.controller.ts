@@ -18,8 +18,10 @@ import { CreateCategoryDto } from './dto/create-category.dto';
 import { ApiTags, ApiOperation, ApiConsumes, ApiBearerAuth } from '@nestjs/swagger';
 import { CommandBus, QueryBus } from '@nestjs/cqrs';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { diskStorage } from 'multer';
-import { extname } from 'path';
+import { MediaInterceptor } from 'src/common/interceptors/file.interceptor';
+import { UploadType } from 'src/common/decorators/upload-type.decorator';
+import { TypeMedia } from 'src/common/enums/media/type-media.enum';
+import { multerConfig } from 'src/common/utils/multer-config.util';
 import {
   CreateCategoryCommand,
   DeleteCategoryCommand,
@@ -42,27 +44,15 @@ export class CategoryController {
 
   @Post()
   @Roles(UserLevel.ADMIN)
+  @UploadType(TypeMedia.CATEGORY_THUMBNAIL)
   @ApiOperation({ summary: 'Thêm mới category với ảnh' })
   @ApiConsumes('multipart/form-data')
   @UseInterceptors(
-    FileInterceptor('image', {
-      storage: diskStorage({
-        destination: './uploads/categories',
-        filename: (req, file, cb) => {
-          const uniqueSuffix =
-            Date.now() + '-' + Math.round(Math.random() * 1e9);
-          cb(null, `category-${uniqueSuffix}${extname(file.originalname)}`);
-        },
-      }),
-    }),
+    FileInterceptor('image', multerConfig('categories', 'category')),
+    MediaInterceptor,
   )
-  async create(
-    @Body() createCategoryDto: CreateCategoryDto,
-    @UploadedFile() image?: Express.Multer.File,
-  ) {
-    return await this.commandBus.execute(
-      new CreateCategoryCommand(createCategoryDto, image),
-    );
+  async create(@Body() createCategoryDto: CreateCategoryDto) {
+    return await this.commandBus.execute(new CreateCategoryCommand(createCategoryDto));
   }
 
   @Get()
@@ -79,27 +69,19 @@ export class CategoryController {
 
   @Patch(':id')
   @Roles(UserLevel.ADMIN)
+  @UploadType(TypeMedia.CATEGORY_THUMBNAIL)
   @ApiOperation({ summary: 'Cập nhật category' })
   @ApiConsumes('multipart/form-data')
   @UseInterceptors(
-    FileInterceptor('image', {
-      storage: diskStorage({
-        destination: './uploads/categories',
-        filename: (req, file, cb) => {
-          const uniqueSuffix =
-            Date.now() + '-' + Math.round(Math.random() * 1e9);
-          cb(null, `category-${uniqueSuffix}${extname(file.originalname)}`);
-        },
-      }),
-    }),
+    FileInterceptor('image', multerConfig('categories', 'category')),
+    MediaInterceptor,
   )
   async update(
     @Param('id') id: string,
     @Body() updateCategoryDto: Partial<CreateCategoryDto>,
-    @UploadedFile() image?: Express.Multer.File,
   ) {
     return await this.commandBus.execute(
-      new UpdateCategoryCommand(+id, updateCategoryDto, image),
+      new UpdateCategoryCommand(+id, updateCategoryDto),
     );
   }
 

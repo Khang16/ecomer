@@ -18,27 +18,9 @@ export class CreateCategoryHandler
   ) {}
 
   async execute(command: CreateCategoryCommand): Promise<ProductCategory> {
-    const { createCategoryDto, file } = command;
+    const { createCategoryDto } = command;
 
-    let imageMedia: Media | undefined = undefined;
-    if (file) {
-      imageMedia = this.mediaRepository.create({
-        url: `/uploads/categories/${file.filename}`,
-        type: TypeMedia.CATEGORY_THUMBNAIL,
-      });
-      imageMedia = await this.mediaRepository.save(imageMedia);
-    } else {
-      imageMedia = this.mediaRepository.create({
-        url: `/uploads/categories/category-default.png`,
-        type: TypeMedia.CATEGORY_THUMBNAIL,
-      });
-      imageMedia = await this.mediaRepository.save(imageMedia);
-    }
-
-    const category = this.categoryRepository.create({
-      ...createCategoryDto,
-      image_id: imageMedia ? imageMedia.id : undefined,
-    });
+    const category = this.categoryRepository.create(createCategoryDto);
 
     return await this.categoryRepository.save(category);
   }

@@ -32,16 +32,6 @@ export class UpdateUserHandler implements ICommandHandler<UpdateUserCommand> {
       user.password = await bcrypt.hash(updateUserDto.password, 10);
     }
 
-    if (file) {
-      // Create new Media for avatar
-      let avatarMedia = this.mediaRepository.create({
-        url: `/uploads/${file.filename}`,
-        type: TypeMedia.USER_AVATAR,
-      });
-      avatarMedia = await this.mediaRepository.save(avatarMedia);
-      user.avatar_id = avatarMedia.id;
-    }
-
     // Lọc bỏ các trường undefined để không ghi đè dữ liệu cũ bằng giá trị trống
     const { birthday, ...rest } = updateUserDto;
 

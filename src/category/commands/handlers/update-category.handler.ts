@@ -26,15 +26,6 @@ export class UpdateCategoryHandler
       throw new NotFoundException(`Category with ID ${id} not found`);
     }
 
-    if (file) {
-      let imageMedia = this.mediaRepository.create({
-        url: `/uploads/categories/${file.filename}`,
-        type: TypeMedia.CATEGORY_THUMBNAIL,
-      });
-      imageMedia = await this.mediaRepository.save(imageMedia);
-      category.image_id = imageMedia.id;
-    }
-
     Object.assign(category, updateCategoryDto);
 
     return await this.categoryRepository.save(category);

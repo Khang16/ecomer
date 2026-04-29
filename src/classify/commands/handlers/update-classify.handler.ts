@@ -26,15 +26,6 @@ export class UpdateClassifyHandler
       throw new NotFoundException(`Classify with ID ${id} not found`);
     }
 
-    if (file) {
-      let imageMedia = this.mediaRepository.create({
-        url: `/uploads/classifies/${file.filename}`,
-        type: TypeMedia.CLASSIFY_THUMBNAIL,
-      });
-      imageMedia = await this.mediaRepository.save(imageMedia);
-      classify.image_id = imageMedia.id;
-    }
-
     Object.assign(classify, updateClassifyDto);
 
     return await this.classifyRepository.save(classify);

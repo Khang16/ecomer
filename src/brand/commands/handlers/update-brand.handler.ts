@@ -24,15 +24,6 @@ export class UpdateBrandHandler implements ICommandHandler<UpdateBrandCommand> {
       throw new NotFoundException(`Brand with ID ${id} not found`);
     }
 
-    if (file) {
-      let imageMedia = this.mediaRepository.create({
-        url: `/uploads/brands/${file.filename}`,
-        type: TypeMedia.BRAND_THUMBNAIL,
-      });
-      imageMedia = await this.mediaRepository.save(imageMedia);
-      brand.image_id = imageMedia.id;
-    }
-
     Object.assign(brand, updateBrandDto);
 
     return await this.brandRepository.save(brand);

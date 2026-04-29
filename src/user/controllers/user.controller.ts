@@ -7,7 +7,6 @@ import {
   Patch,
   Post,
   Query,
-  UploadedFile,
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
@@ -19,18 +18,20 @@ import {
   ApiOperation,
   ApiTags,
 } from '@nestjs/swagger';
+import { Roles } from 'src/auth/decorators/roles.decorator';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { RolesGuard } from 'src/auth/guards/roles.guard';
-import { Roles } from 'src/auth/decorators/roles.decorator';
+import { UploadType } from 'src/common/decorators/upload-type.decorator';
+import { TypeMedia } from 'src/common/enums/media/type-media.enum';
 import { UserLevel } from 'src/common/enums/user/user.enum';
-import { diskStorage } from 'multer';
-import { extname } from 'path';
+import { MediaInterceptor } from 'src/common/interceptors/file.interceptor';
+import { multerConfig } from 'src/common/utils/multer-config.util';
+import { DeleteUserCommand } from '../commands/implements/delete-user.command';
 import { StoreUserCommand } from '../commands/implements/store-user.command';
 import { UpdateUserCommand } from '../commands/implements/update-user.command';
-import { DeleteUserCommand } from '../commands/implements/delete-user.command';
+import { FilterUserDto } from '../dtos/filter-user.dto';
 import { CreateUserDto } from '../dtos/store-user.dto';
 import { UpdateUserDto } from '../dtos/update-user.dto';
-import { FilterUserDto } from '../dtos/filter-user.dto';
 import { GetUsersQuery } from '../queries/implements/find-user.query';
 
 @ApiTags('Users')
@@ -45,25 +46,15 @@ export class UserController {
 
   @Roles(UserLevel.ADMIN)
   @Post()
+  @UploadType(TypeMedia.USER_AVATAR)
   @ApiOperation({ summary: 'Create user with avatr' })
   @ApiConsumes('multipart/form-data')
   @UseInterceptors(
-    FileInterceptor('avatar', {
-      storage: diskStorage({
-        destination: './uploads',
-        filename(req, file, callback) {
-          const uniqueSuffix =
-            Date.now() + '-' + Math.round(Math.random() * 1e9);
-          callback(null, `${uniqueSuffix}${extname(file.originalname)}`);
-        },
-      }),
-    }),
+    FileInterceptor('avatar', multerConfig('', 'user')),
+    MediaInterceptor,
   )
-  async createUser(
-    @Body() createUserDto: CreateUserDto,
-    @UploadedFile() file: Express.Multer.File,
-  ) {
-    return this.commandBus.execute(new StoreUserCommand(createUserDto, file));
+  async createUser(@Body() createUserDto: CreateUserDto) {
+    return this.commandBus.execute(new StoreUserCommand(createUserDto));
   }
 
   @Roles(UserLevel.ADMIN)
@@ -75,28 +66,18 @@ export class UserController {
 
   @Roles(UserLevel.ADMIN)
   @Patch(':id')
+  @UploadType(TypeMedia.USER_AVATAR)
   @ApiOperation({ summary: 'Update user' })
   @ApiConsumes('multipart/form-data')
   @UseInterceptors(
-    FileInterceptor('avatar', {
-      storage: diskStorage({
-        destination: './uploads',
-        filename(req, file, callback) {
-          const uniqueSuffix =
-            Date.now() + '-' + Math.round(Math.random() * 1e9);
-          callback(null, `${uniqueSuffix}${extname(file.originalname)}`);
-        },
-      }),
-    }),
+    FileInterceptor('avatar', multerConfig('', 'user')),
+    MediaInterceptor,
   )
   async updateUser(
     @Param('id') id: string,
     @Body() updateUserDto: UpdateUserDto,
-    @UploadedFile() file: Express.Multer.File,
   ) {
-    return this.commandBus.execute(
-      new UpdateUserCommand(id, updateUserDto, file),
-    );
+    return this.commandBus.execute(new UpdateUserCommand(id, updateUserDto));
   }
 
   @Roles(UserLevel.ADMIN)

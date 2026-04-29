@@ -10,6 +10,8 @@ import { ProductModule } from './product/product.module';
 import { BrandModule } from './brand/brand.module';
 import { CategoryModule } from './category/category.module';
 import { ClassifyModule } from './classify/classify.module';
+import { CommonModule } from './common/common.module';
+import { OrderModule } from './order/order.module';
 
 @Module({
   imports: [
@@ -18,7 +20,7 @@ import { ClassifyModule } from './classify/classify.module';
       imports: [ConfigModule], //Import ConfigModule để dùng ConfigService
       inject: [ConfigService], //Inject ConfigService vào useFactory
       useFactory: (config: ConfigService) => ({
-        type: 'mysql',
+        type: config.get<string>('DATABASE_TYPE') as 'mysql',
         host: config.get<string>('DATABASE_HOST'),
         port: config.get<number>('DATABASE_PORT'),
         username: config.get<string>('DATABASE_USERNAME'),
@@ -35,6 +37,8 @@ import { ClassifyModule } from './classify/classify.module';
     BrandModule,
     CategoryModule,
     ClassifyModule,
+    OrderModule,
+    CommonModule,
   ],
   controllers: [],
   providers: [

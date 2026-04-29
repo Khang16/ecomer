@@ -1,30 +1,36 @@
 import {
-  Controller,
-  Post,
   Body,
+  Controller,
+  Delete,
   Get,
   Param,
-  UseInterceptors,
-  UploadedFile,
   Patch,
-  Delete,
+  Post,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
-import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
-import { RolesGuard } from 'src/auth/guards/roles.guard';
-import { Roles } from 'src/auth/decorators/roles.decorator';
-import { UserLevel } from 'src/common/enums/user/user.enum';
-import { CreateClassifyDto } from './dto/create-classify.dto';
-import { ApiTags, ApiOperation, ApiConsumes, ApiBearerAuth } from '@nestjs/swagger';
 import { CommandBus, QueryBus } from '@nestjs/cqrs';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { diskStorage } from 'multer';
-import { extname } from 'path';
+import {
+  ApiBearerAuth,
+  ApiConsumes,
+  ApiOperation,
+  ApiTags,
+} from '@nestjs/swagger';
+import { Roles } from 'src/auth/decorators/roles.decorator';
+import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
+import { RolesGuard } from 'src/auth/guards/roles.guard';
+import { UploadType } from 'src/common/decorators/upload-type.decorator';
+import { TypeMedia } from 'src/common/enums/media/type-media.enum';
+import { UserLevel } from 'src/common/enums/user/user.enum';
+import { MediaInterceptor } from 'src/common/interceptors/file.interceptor';
+import { multerConfig } from 'src/common/utils/multer-config.util';
 import {
   CreateClassifyCommand,
   DeleteClassifyCommand,
   UpdateClassifyCommand,
 } from './commands/implements/classify.command';
+import { CreateClassifyDto } from './dto/create-classify.dto';
 import {
   GetClassifiesQuery,
   GetClassifyQuery,
@@ -42,26 +48,16 @@ export class ClassifyController {
 
   @Post()
   @Roles(UserLevel.ADMIN)
+  @UploadType(TypeMedia.CLASSIFY_THUMBNAIL)
   @ApiOperation({ summary: 'Thêm mới classify với ảnh' })
   @ApiConsumes('multipart/form-data')
   @UseInterceptors(
-    FileInterceptor('image', {
-      storage: diskStorage({
-        destination: './uploads/classifies',
-        filename: (req, file, cb) => {
-          const uniqueSuffix =
-            Date.now() + '-' + Math.round(Math.random() * 1e9);
-          cb(null, `classify-${uniqueSuffix}${extname(file.originalname)}`);
-        },
-      }),
-    }),
+    FileInterceptor('image', multerConfig('classifies', 'classify')),
+    MediaInterceptor,
   )
-  async create(
-    @Body() createClassifyDto: CreateClassifyDto,
-    @UploadedFile() image?: Express.Multer.File,
-  ) {
+  async create(@Body() createClassifyDto: CreateClassifyDto) {
     return await this.commandBus.execute(
-      new CreateClassifyCommand(createClassifyDto, image),
+      new CreateClassifyCommand(createClassifyDto),
     );
   }
 
@@ -79,27 +75,19 @@ export class ClassifyController {
 
   @Patch(':id')
   @Roles(UserLevel.ADMIN)
+  @UploadType(TypeMedia.CLASSIFY_THUMBNAIL)
   @ApiOperation({ summary: 'Cập nhật classify' })
   @ApiConsumes('multipart/form-data')
   @UseInterceptors(
-    FileInterceptor('image', {
-      storage: diskStorage({
-        destination: './uploads/classifies',
-        filename: (req, file, cb) => {
-          const uniqueSuffix =
-            Date.now() + '-' + Math.round(Math.random() * 1e9);
-          cb(null, `classify-${uniqueSuffix}${extname(file.originalname)}`);
-        },
-      }),
-    }),
+    FileInterceptor('image', multerConfig('classifies', 'classify')),
+    MediaInterceptor,
   )
   async update(
     @Param('id') id: string,
     @Body() updateClassifyDto: Partial<CreateClassifyDto>,
-    @UploadedFile() image?: Express.Multer.File,
   ) {
     return await this.commandBus.execute(
-      new UpdateClassifyCommand(+id, updateClassifyDto, image),
+      new UpdateClassifyCommand(+id, updateClassifyDto),
     );
   }
 

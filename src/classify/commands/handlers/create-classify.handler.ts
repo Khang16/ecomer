@@ -18,27 +18,9 @@ export class CreateClassifyHandler
   ) {}
 
   async execute(command: CreateClassifyCommand): Promise<Classify> {
-    const { createClassifyDto, file } = command;
+    const { createClassifyDto } = command;
 
-    let imageMedia: Media | undefined = undefined;
-    if (file) {
-      imageMedia = this.mediaRepository.create({
-        url: `/uploads/classifies/${file.filename}`,
-        type: TypeMedia.CLASSIFY_THUMBNAIL,
-      });
-      imageMedia = await this.mediaRepository.save(imageMedia);
-    } else {
-      imageMedia = this.mediaRepository.create({
-        url: `/uploads/classifies/classify-default.png`,
-        type: TypeMedia.CLASSIFY_THUMBNAIL,
-      });
-      imageMedia = await this.mediaRepository.save(imageMedia);
-    }
-
-    const classify = this.classifyRepository.create({
-      ...createClassifyDto,
-      image_id: imageMedia ? imageMedia.id : undefined,
-    });
+    const classify = this.classifyRepository.create(createClassifyDto);
 
     return await this.classifyRepository.save(classify);
   }
