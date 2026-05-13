@@ -33,6 +33,7 @@ import { FilterUserDto } from '../dtos/filter-user.dto';
 import { CreateUserDto } from '../dtos/store-user.dto';
 import { UpdateUserDto } from '../dtos/update-user.dto';
 import { GetUsersQuery } from '../queries/implements/find-user.query';
+import { CacheInterceptor } from '@nestjs/cache-manager';
 
 @ApiTags('Users')
 @ApiBearerAuth()
@@ -58,6 +59,7 @@ export class UserController {
   }
 
   @Roles(UserLevel.ADMIN)
+  @UseInterceptors(CacheInterceptor)
   @Get()
   @ApiOperation({ summary: 'Find all user' })
   findAll(@Query() filter: FilterUserDto) {

@@ -9,6 +9,7 @@ import {
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
+import { CacheInterceptor } from '@nestjs/cache-manager';
 import { CommandBus, QueryBus } from '@nestjs/cqrs';
 import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import {
@@ -70,12 +71,14 @@ export class ProductController {
   }
 
   @Get()
+  @UseInterceptors(CacheInterceptor)
   @ApiOperation({ summary: 'Lấy danh sách sản phẩm' })
   async findAll() {
     return await this.queryBus.execute(new GetProductsQuery());
   }
 
   @Get(':id')
+  @UseInterceptors(CacheInterceptor)
   @ApiOperation({ summary: 'Lấy sản phẩm theo id' })
   async findOne(@Param('id') id: string) {
     return await this.queryBus.execute(new GetProductQuery(+id));

@@ -12,6 +12,8 @@ import { CategoryModule } from './category/category.module';
 import { ClassifyModule } from './classify/classify.module';
 import { CommonModule } from './common/common.module';
 import { OrderModule } from './order/order.module';
+import { CacheModule } from '@nestjs/cache-manager';
+import { createKeyv } from '@keyv/redis';
 
 @Module({
   imports: [
@@ -29,6 +31,25 @@ import { OrderModule } from './order/order.module';
         autoLoadEntities: true,
         synchronize: true, // tự động tạo bảng trong csdl
       }),
+    }),
+    CacheModule.register({
+      isGlobal: true,
+      stores: [
+        createKeyv(
+          `redis://${
+            process.env.REDIS_PASSWORD
+              ? `:${encodeURIComponent(process.env.REDIS_PASSWORD)}@`
+              : ''
+          }${process.env.REDIS_HOST || '127.0.0.2'}:${
+            Number(process.env.REDIS_PORT) || 6379
+          }/0`,
+          {
+            connectionTimeout: 2000,
+            throwOnConnectError: true,
+          },
+        ),
+      ],
+      ttl: 60 * 5, // 5 phút mặc định
     }),
     UserModule,
     UserAddressModule,

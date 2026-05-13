@@ -1,20 +1,22 @@
 import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
+import type { Cache } from 'cache-manager';
+import { Inject, NotFoundException } from '@nestjs/common';
 import { Product } from 'src/common/entities/product.entity';
 import { Media } from 'src/common/entities/media.entity';
 import { UpdateProductCommand } from '../implements/product.command';
-import { NotFoundException } from '@nestjs/common';
 
 @CommandHandler(UpdateProductCommand)
-export class UpdateProductHandler
-  implements ICommandHandler<UpdateProductCommand>
-{
+export class UpdateProductHandler implements ICommandHandler<UpdateProductCommand> {
   constructor(
     @InjectRepository(Product)
     private readonly productRepository: Repository<Product>,
     @InjectRepository(Media)
     private readonly mediaRepository: Repository<Media>,
+    @Inject(CACHE_MANAGER)
+    private readonly cacheManager: Cache,
   ) {}
 
   async execute(command: UpdateProductCommand): Promise<Product> {
@@ -25,7 +27,8 @@ export class UpdateProductHandler
       throw new NotFoundException(`Product with ID ${id} not found`);
     }
 
-    const { image_ids, video_ids, images, videos, ...productData } = updateProductDto as any;
+    const { image_ids, video_ids, images, videos, ...productData } =
+      updateProductDto as any;
 
     Object.assign(product, productData);
     const savedProduct = await this.productRepository.save(product);
@@ -33,11 +36,11 @@ export class UpdateProductHandler
     // Link images to product
     if (image_ids && image_ids.length > 0) {
       await this.mediaRepository.update(image_ids, { product: savedProduct });
-      
+
       // Set the first image as thumbnail if not set
       if (!savedProduct.thumbnail_id) {
-          savedProduct.thumbnail_id = image_ids[0];
-          await this.productRepository.save(savedProduct);
+        savedProduct.thumbnail_id = image_ids[0];
+        await this.productRepository.save(savedProduct);
       }
     }
 
@@ -46,6 +49,7 @@ export class UpdateProductHandler
       await this.mediaRepository.update(video_ids, { product: savedProduct });
     }
 
+    await this.cacheManager.set('products:list:version', Date.now());
     return savedProduct;
   }
 }

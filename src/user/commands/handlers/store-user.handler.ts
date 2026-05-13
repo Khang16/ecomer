@@ -1,6 +1,9 @@
 import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
+import { Inject } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import * as bcrypt from 'bcryptjs';
+import type { Cache } from 'cache-manager';
 import { Media } from 'src/common/entities/media.entity'; // Import thêm Media entity
 import { User } from 'src/common/entities/user.entity';
 import { Repository } from 'typeorm';
@@ -13,10 +16,12 @@ export class StoreUserHandler implements ICommandHandler<StoreUserCommand> {
     private readonly userRepository: Repository<User>,
     @InjectRepository(Media)
     private readonly mediaRepository: Repository<Media>,
+    @Inject(CACHE_MANAGER)
+    private readonly cacheManager: Cache,
   ) {}
 
   async execute(command: StoreUserCommand): Promise<any> {
-    const { createUserDto, file } = command;
+    const { createUserDto } = command;
 
     const hashedPassword = await bcrypt.hash(createUserDto.password, 10);
 
@@ -29,6 +34,9 @@ export class StoreUserHandler implements ICommandHandler<StoreUserCommand> {
       level: createUserDto.level || 2,
     });
 
-    return this.userRepository.save(user);
+    const savedUser = await this.userRepository.save(user);
+    await this.cacheManager.set('users:list:version', Date.now());
+
+    return savedUser;
   }
 }
